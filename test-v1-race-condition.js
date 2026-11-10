@@ -6,6 +6,22 @@ async function testRaceCondition() {
     console.log("Sự kiện có: 20 vé");
     console.log("Bắn đồng thời: 60 requests mua vé...\n");
 
+    // Tự động reset kho vé về 20 trước khi test
+    await new Promise((resolve) => {
+        const resetReq = http.request({
+            hostname: '127.0.0.1',
+            port: 3000,
+            path: '/api/v1/events/reset',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }, (res) => {
+            res.on('data', () => {});
+            res.on('end', resolve);
+        });
+        resetReq.write(JSON.stringify({ total_tickets: 20 }));
+        resetReq.end();
+    });
+
     const requests = [];
 
     for (let i = 1; i <= 60; i++) {

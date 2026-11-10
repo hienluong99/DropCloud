@@ -39,31 +39,32 @@ Hệ thống được thiết kế tách bạch rõ ràng giữa **Trải nghi�
 ---
 
 ## 3. Chạy kiểm thử tự động qua Terminal:
+
+### Kiểm thử V1 (Race Condition & Bán lố vé):
 ```bash
 node test-v1-race-condition.js
 ```
-Kết quả kiểm thử thực tế:
-```text
-=== BẮT ĐẦU TEST RACE CONDITION (V1 LEGACY QUA GATEWAY) ===
-Sự kiện có: 20 vé
-Bắn đồng thời: 60 requests mua vé...
 
-Kết quả trả về từ API:
-- Thành công (200 OK): 46
-- Thất bại / Hết vé (400): 14
+### Kiểm thử V2 (Pessimistic Locking `SELECT ... FOR UPDATE`):
+```bash
+node test-v2-pessimistic-lock.js
+```
 
-=============================================
---- THỰC TRẠNG TRONG DATABASE SAU ĐỢT TẢI ---
-- Tổng vé ban đầu: 20
-- Số đơn hàng thực tế đã tạo: 46
-- Số vé còn lại: 0
-- Phát hiện Bán Lố (Oversold): ❌ CÓ - BÁN LỐ 26 VÉ! (230%)
-=============================================
+### Chạy so sánh đối đầu toàn diện V1 vs V2:
+```bash
+node test-compare-v1-v2.js
 ```
 
 ---
 
-## 4. Các bước tiếp theo (Lộ trình tối ưu):
-- **🟡 V2:** Thêm Database Locking (`SELECT ... FOR UPDATE`) để chặn đứng 100% việc bán lố $\rightarrow$ Đo lường điểm nghẽn mới: **Lock Contention & Tăng độ trễ**.
-- **🟢 V3:** Tách Node.js Edge + Redis Lua Script + AWS SQS.
-- **🔵 V4:** Hoàn thiện kiến trúc AWS SAA (DLQ, Delay Queue thu hồi vé, S3 Presigned URL).
+## 4. Báo Cáo Kỹ Thuật Chi Tiết (Architecture Specifications)
+- 🔴 **V1 Monolith (Legacy):** [V1_ARCHITECTURE.md](V1_ARCHITECTURE.md)
+- 🟡 **V2 Pessimistic Locking:** [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md)
+
+---
+
+## 5. Các bước tiếp theo (Lộ trình tối ưu):
+- **✅ 🔴 V1:** Monolith không khóa $\rightarrow$ Tái hiện lỗi Race Condition & Bán lố 230%.
+- **✅ 🟡 V2:** Database Locking (`SELECT ... FOR UPDATE`) $\rightarrow$ Loại bỏ 100% bán lố, ghi nhận điểm nghẽn **Lock Contention & Tăng độ trễ**.
+- **⏳ 🟢 V3:** Tách Node.js Edge + Redis Lua Script + AWS SQS (Giải quyết đồng thời 0% bán lố và độ trễ < 15ms).
+- **⏳ 🔵 V4:** Hoàn thiện kiến trúc AWS SAA (DLQ, Delay Queue thu hồi vé sau 5 phút, S3 Presigned URL).
