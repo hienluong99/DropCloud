@@ -4,6 +4,15 @@
 
 ---
 
+## 🚀 Hướng Dẫn Cài Đặt & Chạy Nhanh
+Xem hướng dẫn chi tiết từng bước từ cài đặt môi trường đến khởi chạy hệ thống tại: **[SETUP_GUIDE.md](SETUP_GUIDE.md)**.
+
+* **Khởi động nhanh (Windows):** `.\run-v1.ps1`
+* **Dừng toàn bộ server:** `.\stop-v1.ps1`
+* **Chạy kiểm thử tải (Race Condition):** `node test-v1-race-condition.js`
+
+---
+
 ## 🌟 Trải Nghiệm Hệ Thống Trong Thực Tế
 
 Hệ thống được thiết kế tách bạch rõ ràng giữa **Trải nghiệm Người Dùng Thực Tế** và **Phòng Thử Nghiệm Tải (Stress Test Lab)** cho kỹ sư / người phỏng vấn:
