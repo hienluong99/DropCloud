@@ -1,0 +1,37 @@
+# Local agent plans & memory (Keep private)
+PLAN.md
+GEMINI.md
+
+# Dependencies
+**/node_modules/
+**/vendor/
+
+# Environment files
+**/.env
+**/.env.backup
+**/.env.production
+!**/.env.example
+
+# Logs and databases
+**/*.log
+**/*.sqlite*
+
+# Laravel specific
+services/core-service/storage/*.key
+services/core-service/storage/framework/cache/*
+!services/core-service/storage/framework/cache/.gitignore
+services/core-service/storage/framework/sessions/*
+!services/core-service/storage/framework/sessions/.gitignore
+services/core-service/storage/framework/views/*
+!services/core-service/storage/framework/views/.gitignore
+services/core-service/storage/logs/*
+!services/core-service/storage/logs/.gitignore
+services/core-service/public/storage
+services/core-service/public/hot
+services/core-service/public/build
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
