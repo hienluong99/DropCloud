@@ -1,0 +1,18 @@
+{
+  "name": "clouddrop-edge-service",
+  "version": "1.0.0",
+  "description": "High-concurrency Edge Gateway (Fastify + Redis Lua + AWS SQS + Socket.io) for CloudDrop V3",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.600.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "ioredis": "^5.4.1",
+    "socket.io": "^4.7.5",
+    "uuid": "^10.0.0"
+  }
+}
