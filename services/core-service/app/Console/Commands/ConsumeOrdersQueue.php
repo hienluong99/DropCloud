@@ -64,6 +64,8 @@ class ConsumeOrdersQueue extends Command
         $token = $body['reservation_token'] ?? null;
         $eventId = $body['event_id'] ?? null;
         $userId = $body['user_id'] ?? null;
+        $expiresIn = (int) ($body['expires_in_seconds'] ?? 300);
+        $version = $body['version'] ?? 'v3';
 
         if (!$token || !$eventId || !$userId) {
             $this->warn("[SQS Worker] Message không hợp lệ, bỏ qua & xóa khỏi queue.");
@@ -72,7 +74,7 @@ class ConsumeOrdersQueue extends Command
         }
 
         try {
-            $order = DB::transaction(function () use ($token, $eventId, $userId) {
+            $order = DB::transaction(function () use ($token, $eventId, $userId, $expiresIn, $version) {
                 // Idempotency Check: Nếu token đã tồn tại thì không trừ vé lại
                 $existing = Order::where('reservation_token', $token)->first();
                 if ($existing) {
@@ -89,7 +91,8 @@ class ConsumeOrdersQueue extends Command
                     'user_id' => $userId,
                     'reservation_token' => $token,
                     'status' => 'PENDING',
-                    'version' => 'v3',
+                    'version' => $version,
+                    'expires_at' => now()->addSeconds($expiresIn),
                 ]);
             });
 

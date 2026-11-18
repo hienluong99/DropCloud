@@ -11,6 +11,9 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 const SQS_QUEUE_URL = process.env.SQS_ORDERS_QUEUE_URL || 'http://127.0.0.1:4566/000000000000/clouddrop-orders-queue';
+const SQS_DLQ_URL = process.env.SQS_ORDERS_DLQ_URL || 'http://127.0.0.1:4566/000000000000/clouddrop-orders-dlq';
+const SQS_EXPIRATION_QUEUE_URL = process.env.SQS_EXPIRATION_QUEUE_URL || 'http://127.0.0.1:4566/000000000000/clouddrop-expiration-queue';
+const EXPIRATION_DELAY_SECONDS = parseInt(process.env.EXPIRATION_DELAY_SECONDS || '300', 10);
 const CORE_SERVICE_URL = process.env.CORE_SERVICE_URL || 'http://127.0.0.1:8001';
 
 const fastify = Fastify({ logger: false });
@@ -131,7 +134,10 @@ fastify.get('/api/v3/health', async () => {
 // 5. V3 Flash Sale Reserve Endpoint (Node.js + Redis Lua + AWS SQS)
 fastify.post('/api/v3/reserve', async (request, reply) => {
     const startNs = process.hrtime.bigint();
-    const { event_id: eventId, user_id: userId } = request.body || {};
+    const { event_id: eventId, user_id: userId, ttl_seconds: ttlOverride } = request.body || {};
+    const delaySeconds = Number.isInteger(ttlOverride)
+        ? Math.max(0, Math.min(900, ttlOverride))
+        : EXPIRATION_DELAY_SECONDS;
 
     if (!eventId || !userId) {
         return reply.code(422).send({
@@ -188,7 +194,8 @@ fastify.post('/api/v3/reserve', async (request, reply) => {
             event_id: Number(eventId),
             user_id: String(userId),
             reserved_at: new Date().toISOString(),
-            version: 'v3',
+            expires_in_seconds: delaySeconds,
+            version: 'v4',
         };
 
         try {
@@ -196,6 +203,19 @@ fastify.post('/api/v3/reserve', async (request, reply) => {
                 new SendMessageCommand({
                     QueueUrl: SQS_QUEUE_URL,
                     MessageBody: JSON.stringify(sqsPayload),
+                })
+            );
+
+            // Step 2b (V4): Schedule Delayed Expiration check via AWS SQS Delay Queue
+            await sqsClient.send(
+                new SendMessageCommand({
+                    QueueUrl: SQS_EXPIRATION_QUEUE_URL,
+                    DelaySeconds: delaySeconds,
+                    MessageBody: JSON.stringify({
+                        reservation_token: reservationToken,
+                        event_id: Number(eventId),
+                        user_id: String(userId),
+                    }),
                 })
             );
         } catch (sqsErr) {
@@ -223,6 +243,7 @@ fastify.post('/api/v3/reserve', async (request, reply) => {
                 reservation_token: reservationToken,
                 user_id: String(userId),
                 remaining_tickets: remainingStock,
+                expires_in_seconds: delaySeconds,
                 status: 'QUEUED_IN_SQS',
             },
         });
@@ -306,15 +327,25 @@ fastify.get('/api/v3/events/:id/status', async (request, reply) => {
 
     const dbData = await dbRes.json();
     let sqsVisible = 0;
+    let dlqVisible = 0;
 
     try {
-        const attrs = await sqsClient.send(
-            new GetQueueAttributesCommand({
-                QueueUrl: SQS_QUEUE_URL,
-                AttributeNames: ['ApproximateNumberOfMessages'],
-            })
-        );
-        sqsVisible = parseInt(attrs.Attributes?.ApproximateNumberOfMessages || '0', 10);
+        const [mainAttrs, dlqAttrs] = await Promise.all([
+            sqsClient.send(
+                new GetQueueAttributesCommand({
+                    QueueUrl: SQS_QUEUE_URL,
+                    AttributeNames: ['ApproximateNumberOfMessages'],
+                })
+            ),
+            sqsClient.send(
+                new GetQueueAttributesCommand({
+                    QueueUrl: SQS_DLQ_URL,
+                    AttributeNames: ['ApproximateNumberOfMessages'],
+                })
+            ),
+        ]);
+        sqsVisible = parseInt(mainAttrs.Attributes?.ApproximateNumberOfMessages || '0', 10);
+        dlqVisible = parseInt(dlqAttrs.Attributes?.ApproximateNumberOfMessages || '0', 10);
     } catch (_) {}
 
     return {
@@ -322,6 +353,7 @@ fastify.get('/api/v3/events/:id/status', async (request, reply) => {
         redis_stock: redisStockStr !== null ? parseInt(redisStockStr, 10) : null,
         redis_buyers: redisBuyersCount,
         sqs_queued_messages: sqsVisible,
+        sqs_dlq_messages: dlqVisible,
     };
 });
 

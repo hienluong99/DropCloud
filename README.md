@@ -55,6 +55,11 @@ node test-v2-pessimistic-lock.js
 node test-v3-edge-sqs.js
 ```
 
+### Kiểm thử V4 (AWS SAA: SQS Delay Queue Hoàn Vé + S3 Presigned URL):
+```bash
+node test-v4-saa-features.js
+```
+
 ### Chạy so sánh đối đầu toàn diện V1 vs V2:
 ```bash
 node test-compare-v1-v2.js
@@ -66,11 +71,12 @@ node test-compare-v1-v2.js
 - 🔴 **V1 Monolith (Legacy):** [V1_ARCHITECTURE.md](V1_ARCHITECTURE.md)
 - 🟡 **V2 Pessimistic Locking:** [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md)
 - 🟢 **V3 Edge + Redis Lua + AWS SQS:** [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md)
+- 🔵 **V4 AWS SAA (DLQ, Delay Queue, S3 Presigned, Terraform):** [V4_ARCHITECTURE.md](V4_ARCHITECTURE.md)
 
 ---
 
-## 5. Các bước tiếp theo (Lộ trình tối ưu):
+## 5. Tổng Kết Lộ Trình Tiến Hóa Kiến Trúc:
 - **✅ 🔴 V1:** Monolith không khóa $\rightarrow$ Tái hiện lỗi Race Condition & Bán lố 230%.
 - **✅ 🟡 V2:** Database Locking (`SELECT ... FOR UPDATE`) $\rightarrow$ Loại bỏ 100% bán lố, ghi nhận điểm nghẽn **Lock Contention & Tăng độ trễ**.
 - **✅ 🟢 V3:** Tách Node.js Edge + Redis Lua Script + AWS SQS (Giải quyết đồng thời 0% bán lố và độ trễ < 15ms, kèm Idempotency & Socket.io Realtime).
-- **⏳ 🔵 V4:** Hoàn thiện kiến trúc AWS SAA (DLQ Redrive, Delay Queue thu hồi vé sau 5 phút, S3 Presigned URL xuất vé PDF).
+- **✅ 🔵 V4:** Hoàn thiện kiến trúc AWS SAA (DLQ Redrive, Delay Queue thu hồi vé sau 5 phút, S3 Presigned URL xuất E-Ticket, và Terraform IaC).

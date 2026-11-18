@@ -13,6 +13,12 @@ class Order extends Model
         'reservation_token',
         'status',
         'version',
+        'ticket_s3_key',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'expires_at' => 'datetime',
     ];
 
     public function event(): BelongsTo

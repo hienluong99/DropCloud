@@ -19,9 +19,10 @@ Route::prefix('v2')->group(function () {
     Route::post('/events/reset', [LegacyOrderController::class, 'resetEvent']);
 });
 
-// V3 Core Service Routes (SQS Worker hỗ trợ tra cứu & thanh toán đơn theo reservation_token)
+// V3 & V4 Core Service Routes (SQS Worker tra cứu, thanh toán & S3 Presigned URL vé)
 // Lưu ý: /api/v3/reserve, /api/v3/events/* được Gateway định tuyến thẳng tới Node.js Edge (3001)
 Route::prefix('v3/orders')->group(function () {
     Route::get('/{token}', [V3OrderController::class, 'getOrderByToken']);
     Route::post('/{token}/pay', [V3OrderController::class, 'payOrder']);
+    Route::get('/{token}/ticket', [V3OrderController::class, 'getTicketDownloadUrl']);
 });
